@@ -71,6 +71,11 @@ class CocoDataset(CustomDataset):
               'abstract', 'cartoon', 'letters, numbers', 'camouflage', 'check', 'dot', 'fair isle', 'floral', 'geometric', 'paisley',
               'stripe', 'houndstooth (pattern)', 'herringbone (pattern)', 'chevron', 'argyle', 'leopard', 'snakeskin (pattern)',
               'cheetah', 'peacock', 'zebra', 'giraffe', 'toile de jouy', 'plant')
+    
+    
+    
+    
+    
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
 
@@ -129,6 +134,21 @@ class CocoDataset(CustomDataset):
         ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
         ann_info = self.coco.load_anns(ann_ids)
         return [ann['category_id'] for ann in ann_info]
+    
+    def get_att_ids(self, idx):
+        """Get COCO category ids by index.
+
+        Args:
+            idx (int): Index of data.
+
+        Returns:
+            list[int]: All categories in the image of specified index.
+        """
+
+        img_id = self.data_infos[idx]['id']
+        ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
+        ann_info = self.coco.load_anns(ann_ids)
+        return [ann['attribute_ids'] for ann in ann_info]
 
     def _filter_imgs(self, min_size=32):
         """Filter images too small or without ground truths."""
