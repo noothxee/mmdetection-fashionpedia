@@ -30,7 +30,7 @@ class CocoDataset(CustomDataset):
               "epaulette", "sleeve", "pocket", "neckline", "buckle", "zipper", "applique",  
                "bead", "bow" , "flower", "fringe", "ribbon", "rivet", "ruffle",
               'sequin', "tassel")
-    ATTRIBUTE = ('classic (t-shirt)', 'polo (shirt)', 'undershirt', 'henley (shirt)', 'ringer (t-shirt)', 'raglan (t-shirt)',
+    ATTRIBUTES = ('classic (t-shirt)', 'polo (shirt)', 'undershirt', 'henley (shirt)', 'ringer (t-shirt)', 'raglan (t-shirt)',
              'rugby (shirt)', 'sailor (shirt)', 'crop (top)', 'halter (top)', 'camisole', 'tank (top)', 'peasant (top)',
              'tube (top)', 'tunic (top)', 'smock (top)', 'hoodie', 'blazer', 'pea (jacket)', 'puffer (jacket)', 'biker (jacket)',
              'trucker (jacket)', 'bomber (jacket)', 'anorak', 'safari (jacket)', 'mao (jacket)', 'nehru (jacket)', 'norfolk (jacket)',
