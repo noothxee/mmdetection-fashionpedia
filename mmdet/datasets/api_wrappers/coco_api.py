@@ -29,10 +29,13 @@ class COCO(_COCO):
 
     def get_cat_ids(self, cat_names=[], sup_names=[], cat_ids=[]):
         return self.getCatIds(cat_names, sup_names, cat_ids)
-
+    
+    def get_att_ids(self, att_names=[],sup_names=[], att_ids=[]):
+        return self.getAttIds(att_names, sup_names, att_ids)
+    
     def get_img_ids(self, img_ids=[], cat_ids=[]):
         return self.getImgIds(img_ids, cat_ids)
-
+    
     def load_anns(self, ids):
         return self.loadAnns(ids)
 
