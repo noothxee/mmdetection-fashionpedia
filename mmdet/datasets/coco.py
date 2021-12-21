@@ -22,21 +22,55 @@ from .custom import CustomDataset
 @DATASETS.register_module()
 class CocoDataset(CustomDataset):
 
-    CLASSES = ('person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
-               'train', 'truck', 'boat', 'traffic light', 'fire hydrant',
-               'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog',
-               'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe',
-               'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee',
-               'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat',
-               'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
-               'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl',
-               'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot',
-               'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch',
-               'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop',
-               'mouse', 'remote', 'keyboard', 'cell phone', 'microwave',
-               'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock',
-               'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
-
+    CLASSES = ("shirt, blouse","top, t-shirt, sweatshirt", "sweater", "cardigan", #4
+              "jacket", "vest", "pants", "shorts", "skirt", "coat", "dress", "jumpsuit", #12
+              "cape", "glasses",  "hat", "headband, head covering, hair accessory", #16
+               "tie", "glove", "watch", "belt", "leg warmer", "tights, stockings", #22
+              "sock", "shoe", "bag, wallet", "scarf", "umbrella","hood",  "collar", "lapel", #29
+              "epaulette", "sleeve", "pocket", "neckline", "buckle", "zipper", "applique",  
+               "bead", "bow" , "flower", "fringe", "ribbon", "rivet", "ruffle",
+              'sequin', "tassel")
+    ATTRIBUTE = ('classic (t-shirt)', 'polo (shirt)', 'undershirt', 'henley (shirt)', 'ringer (t-shirt)', 'raglan (t-shirt)',
+             'rugby (shirt)', 'sailor (shirt)', 'crop (top)', 'halter (top)', 'camisole', 'tank (top)', 'peasant (top)',
+             'tube (top)', 'tunic (top)', 'smock (top)', 'hoodie', 'blazer', 'pea (jacket)', 'puffer (jacket)', 'biker (jacket)',
+             'trucker (jacket)', 'bomber (jacket)', 'anorak', 'safari (jacket)', 'mao (jacket)', 'nehru (jacket)', 'norfolk (jacket)',
+             'classic military (jacket)', 'track (jacket)', 'windbreaker', 'chanel (jacket)', 'bolero', 'tuxedo (jacket)',
+             'varsity (jacket)', 'crop (jacket)', 'jeans', 'sweatpants', 'leggings', 'hip-huggers (pants)', 'cargo (pants)',
+             'culottes', 'capri (pants)', 'harem (pants)', 'sailor (pants)', 'jodhpur', 'peg (pants)', 'camo (pants)', 'track (pants)',
+             'crop (pants)', 'short (shorts)', 'booty (shorts)', 'bermuda (shorts)', 'cargo (shorts)', 'trunks', 'boardshorts', 'skort',
+             'roll-up (shorts)', 'tie-up (shorts)', 'culotte (shorts)', 'lounge (shorts)', 'bloomers', 'tutu (skirt)', 'kilt',
+             'wrap (skirt)', 'skater (skirt)', 'cargo (skirt)', 'hobble (skirt)', 'sheath (skirt)', 'ball gown (skirt)',
+             'gypsy (skirt)', 'rah-rah (skirt)', 'prairie (skirt)', 'flamenco (skirt)', 'accordion (skirt)', 'sarong (skirt)',
+             'tulip (skirt)', 'dirndl (skirt)', 'godet (skirt)', 'blanket (coat)', 'parka', 'trench (coat)', 'pea (coat)',
+             'shearling (coat)', 'teddy bear (coat)', 'puffer (coat)', 'duster (coat)', 'raincoat', 'kimono','robe', 'dress (coat )',
+              'duffle (coat)', 'wrap (coat)', 'military (coat)', 'swing (coat)', 'halter (dress)', 'wrap (dress)', 'chemise (dress)',
+              'slip (dress)', 'cheongsams', 'jumper (dress)', 'shift (dress)', 'sheath (dress)', 'shirt (dress)', 'sundress',
+              'kaftan', 'bodycon (dress)', 'nightgown', 'gown', 'sweater (dress)', 'tea (dress)', 'blouson (dress)', 'tunic (dress)',
+              'skater (dress)', 'asymmetrical', 'symmetrical', 'peplum', 'circle', 'flare', 'fit and flare', 'trumpet', 'mermaid',
+              'balloon', 'bell', 'bell bottom', 'bootcut', 'peg', 'pencil', 'straight', 'a-line', 'tent', 'baggy', 'wide leg',
+              'high low', 'curved (fit)', 'tight (fit)', 'regular (fit)','loose (fit)', 'oversized', 'empire waistline',
+              'dropped waistline', 'high waist', 'normal waist', 'low waist', 'basque (wasitline)', 'no waistline', 'above-the-hip (length)',
+              'hip (length)', 'micro (length)', 'mini (length)', 'above-the-knee (length)', 'knee (length)', 'below the knee (length)',
+              'midi', 'maxi (length)', 'floor (length)', 'sleeveless', 'short (length)', 'elbow-length', 'three quarter (length)',
+              'wrist-length', 'asymmetric (collar)', 'regular (collar)', 'shirt (collar)', 'polo (collar)', 'chelsea (collar)',
+              'banded (collar)', 'mandarin (collar)', 'peter pan (collar)', 'bow (collar)', 'stand-away (collar)', 'jabot (collar)',
+              'sailor (collar)', 'oversized (collar)', 'notched (lapel)', 'peak (lapel)', 'shawl (lapel)', 'napoleon (lapel)',
+              'oversized (lapel)', 'collarless', 'asymmetric (neckline)', 'crew (neck)', 'round (neck)', 'v-neck', 'surplice (neck)',
+              'oval (neck)', 'u-neck', 'sweetheart (neckline)', 'queen anne (neck)', 'boat (neck)', 'scoop (neck)', 'square (neckline)',
+              'plunging (neckline)', 'keyhole (neck)', 'halter (neck)', 'crossover (neck)', 'choker (neck)', 'high (neck)',
+              'turtle (neck)', 'cowl (neck)', 'straight across (neck)', 'illusion (neck)', 'off-the-shoulder', 'one shoulder',
+              'set-in sleeve', 'dropped-shoulder sleeve', 'raglan (sleeve)', 'cap (sleeve)', 'tulip (sleeve)', 'puff (sleeve)',
+              'bell (sleeve)', 'circular flounce (sleeve)', 'poet (sleeve)', 'dolman (sleeve), batwing (sleeve)', 'bishop (sleeve)',
+              'leg of mutton (sleeve)', 'kimono (sleeve)', 'cargo (pocket)', 'patch (pocket)', 'welt (pocket)', 'kangaroo (pocket)',
+              'seam (pocket)', 'slash (pocket)', 'curved (pocket)', 'flap (pocket)', 'single breasted', 'double breasted',
+              'lace up', 'wrapping', 'zip-up', 'fly (opening)', 'chained (opening)', 'buckled (opening)', 'toggled (opening)',
+              'no opening', 'plastic', 'rubber', 'metal', 'feather', 'gem', 'bone', 'ivory', 'fur', 'suede', 'shearling',
+              'crocodile', 'snakeskin', 'wood', 'no non-textile material', 'burnout', 'distressed', 'washed', 'embossed',
+              'frayed', 'printed', 'ruched', 'quilted', 'pleat', 'gathering', 'smocking', 'tiered', 'cutout', 'slit', 'perforated',
+              'lining', 'applique(a)', 'bead(a)', 'rivet(a)', 'sequin(a)', 'no special manufacturing technique', 'plain (pattern)',
+              'abstract', 'cartoon', 'letters, numbers', 'camouflage', 'check', 'dot', 'fair isle', 'floral', 'geometric', 'paisley',
+              'stripe', 'houndstooth (pattern)', 'herringbone (pattern)', 'chevron', 'argyle', 'leopard', 'snakeskin (pattern)',
+              'cheetah', 'peacock', 'zebra', 'giraffe', 'toile de jouy', 'plant')
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.
 
