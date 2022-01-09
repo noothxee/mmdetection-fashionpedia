@@ -24,6 +24,8 @@ class ConvFCBBoxHead(BBoxHead):
                  num_shared_fcs=0,
                  num_cls_convs=0,
                  num_cls_fcs=0,
+                 num_atr_convs=0,
+                 num_atr_fcs=0,
                  num_reg_convs=0,
                  num_reg_fcs=0,
                  conv_out_channels=256,
@@ -47,6 +49,8 @@ class ConvFCBBoxHead(BBoxHead):
         self.num_shared_fcs = num_shared_fcs
         self.num_cls_convs = num_cls_convs
         self.num_cls_fcs = num_cls_fcs
+        self.num_atr_convs = num_atr_convs
+        self.num_atr_fcs = num_atr_fcs
         self.num_reg_convs = num_reg_convs
         self.num_reg_fcs = num_reg_fcs
         self.conv_out_channels = conv_out_channels
@@ -65,7 +69,10 @@ class ConvFCBBoxHead(BBoxHead):
         self.cls_convs, self.cls_fcs, self.cls_last_dim = \
             self._add_conv_fc_branch(
                 self.num_cls_convs, self.num_cls_fcs, self.shared_out_channels)
-
+        # add atr spcific branch
+        self.atr_convs, self.atr_fcs, self.atr_last_dim = \
+            self._add_conv_fc_branch(
+                self.num_atr_convs, self.num_atr_fcs, self.shared_out_channels)
         # add reg specific branch
         self.reg_convs, self.reg_fcs, self.reg_last_dim = \
             self._add_conv_fc_branch(
@@ -74,6 +81,8 @@ class ConvFCBBoxHead(BBoxHead):
         if self.num_shared_fcs == 0 and not self.with_avg_pool:
             if self.num_cls_fcs == 0:
                 self.cls_last_dim *= self.roi_feat_area
+            if self.num_atr_fcs == 0:
+                self.atr_last_dim *= self.roi_feat_area
             if self.num_reg_fcs == 0:
                 self.reg_last_dim *= self.roi_feat_area
 
