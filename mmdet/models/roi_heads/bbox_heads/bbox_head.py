@@ -59,6 +59,7 @@ class BBoxHead(BaseModule):
         self.reg_decoded_bbox = reg_decoded_bbox
         self.reg_predictor_cfg = reg_predictor_cfg
         self.cls_predictor_cfg = cls_predictor_cfg
+        self.atr_predictor_cfg = atr_predictor_cfg
         self.fp16_enabled = False
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
@@ -82,9 +83,10 @@ class BBoxHead(BaseModule):
                 in_features=in_channels,
                 out_features=cls_channels)
         if self.with_atr:
+            atr_channels = num_attributes
             self.fc_atr = build_linear_layer(
                 self.atr_predictor_cfg,
-                in_features=inchannels,
+                in_features=in_channels,
                 out_features=atr_channels)
         if self.with_reg:
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
@@ -115,6 +117,10 @@ class BBoxHead(BaseModule):
     @property
     def custom_cls_channels(self):
         return getattr(self.loss_cls, 'custom_cls_channels', False)
+    
+    @property
+    def custom_atr_channels(self):
+        return getattr(self.loss_atr, 'custom_atr_channels', False)
 
     @property
     def custom_activation(self):
