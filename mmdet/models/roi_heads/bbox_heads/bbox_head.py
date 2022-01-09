@@ -19,10 +19,12 @@ class BBoxHead(BaseModule):
     def __init__(self,
                  with_avg_pool=False,
                  with_cls=True,
+                 with_atr=True,
                  with_reg=True,
                  roi_feat_size=7,
                  in_channels=256,
-                 num_classes=80,
+                 num_classes=46,
+                 num_attributes=46,
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
                      clip_border=True,
@@ -32,10 +34,13 @@ class BBoxHead(BaseModule):
                  reg_decoded_bbox=False,
                  reg_predictor_cfg=dict(type='Linear'),
                  cls_predictor_cfg=dict(type='Linear'),
+                 atr_predictor_cfg=dict(type='Linear'),
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0),
+                loss_atr=dict(
+                    type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),             
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
                  init_cfg=None):
@@ -43,11 +48,13 @@ class BBoxHead(BaseModule):
         assert with_cls or with_reg
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
+        self.with_atr = with_atr
         self.with_reg = with_reg
         self.roi_feat_size = _pair(roi_feat_size)
         self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
         self.in_channels = in_channels
         self.num_classes = num_classes
+        self.num_attributes = num_attributes
         self.reg_class_agnostic = reg_class_agnostic
         self.reg_decoded_bbox = reg_decoded_bbox
         self.reg_predictor_cfg = reg_predictor_cfg
@@ -56,6 +63,7 @@ class BBoxHead(BaseModule):
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
+        self.loss_atr = build_loss(loss_atr)
         self.loss_bbox = build_loss(loss_bbox)
 
         in_channels = self.in_channels
@@ -73,6 +81,11 @@ class BBoxHead(BaseModule):
                 self.cls_predictor_cfg,
                 in_features=in_channels,
                 out_features=cls_channels)
+        if self.with_atr:
+            self.fc_atr = build_linear_layer(
+                self.atr_predictor_cfg,
+                in_features=inchannels,
+                out_features=atr_channels)
         if self.with_reg:
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
             self.fc_reg = build_linear_layer(
@@ -87,6 +100,12 @@ class BBoxHead(BaseModule):
                     dict(
                         type='Normal', std=0.01, override=dict(name='fc_cls'))
                 ]
+            if self.with_atr:
+                self.init_cfg += [
+                    dict(
+                        type='Normal', std=0.01, override=dict(name='fc_atr'))
+                ]
+
             if self.with_reg:
                 self.init_cfg += [
                     dict(
