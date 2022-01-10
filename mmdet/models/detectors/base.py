@@ -11,6 +11,7 @@ from mmcv.runner import BaseModule, auto_fp16
 from mmdet.core.visualization import imshow_det_bboxes
 
 
+
 class BaseDetector(BaseModule, metaclass=ABCMeta):
     """Base class for detectors."""
 
@@ -244,7 +245,7 @@ class BaseDetector(BaseModule, metaclass=ABCMeta):
                 - ``num_samples`` indicates the batch size (when the model is
                   DDP, it means the batch size on each GPU), which is used for
                   averaging the logs.
-        """
+        """        
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)
 

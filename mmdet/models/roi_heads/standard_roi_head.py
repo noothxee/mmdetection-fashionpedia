@@ -6,6 +6,10 @@ from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
+import os.path as osp
+import time
+from mmdet.utils import collect_env, get_root_logger
+
 
 @HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
@@ -57,6 +61,7 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                       proposal_list,
                       gt_bboxes,
                       gt_labels,
+                      gt_attributes,
                       gt_bboxes_ignore=None,
                       gt_masks=None,
                       **kwargs):
@@ -80,6 +85,10 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
+        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        log_file = osp.join('/home/noothxee/th_dev/mmdetection-fashionpedia/work_dirs/mask_rcnn_r50_fpn_1x_coco', f'{timestamp}.log')
+        logger = get_root_logger(log_file=log_file, log_level='INFO')  
+       
         # assign gts and sample proposals
         if self.with_bbox or self.with_mask:
             num_imgs = len(img_metas)
@@ -122,18 +131,17 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
-        cls_score, bbox_pred = self.bbox_head(bbox_feats)
+        cls_score, atr_score, bbox_pred = self.bbox_head(bbox_feats)
 
         bbox_results = dict(
-            cls_score=cls_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
+            cls_score=cls_score, atr_score=atr_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
         return bbox_results
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
-        """Run forward function and calculate loss for box head in training."""
+        """Run forward function and calculate loss for box head in training."""        
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
-
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
                                                   gt_labels, self.train_cfg)
         loss_bbox = self.bbox_head.loss(bbox_results['cls_score'],

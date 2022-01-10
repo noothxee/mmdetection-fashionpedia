@@ -13,6 +13,9 @@ from mmdet.core import eval_map, eval_recalls
 from .builder import DATASETS
 from .pipelines import Compose
 
+import os.path as osp
+import time
+from mmdet.utils import collect_env, get_root_logger
 
 @DATASETS.register_module()
 class CustomDataset(Dataset):
@@ -58,6 +61,7 @@ class CustomDataset(Dataset):
                  ann_file,
                  pipeline,
                  classes=None,
+                 attributes=None,
                  data_root=None,
                  img_prefix='',
                  seg_prefix=None,
@@ -73,6 +77,7 @@ class CustomDataset(Dataset):
         self.test_mode = test_mode
         self.filter_empty_gt = filter_empty_gt
         self.CLASSES = self.get_classes(classes)
+        self.ATTRIBUTES = self.get_attributes(attributes)
         self.file_client = mmcv.FileClient(**file_client_args)
 
         # join paths if data_root is specified
@@ -216,6 +221,8 @@ class CustomDataset(Dataset):
 
         img_info = self.data_infos[idx]
         ann_info = self.get_ann_info(idx)
+        
+
         results = dict(img_info=img_info, ann_info=ann_info)
         if self.proposals is not None:
             results['proposals'] = self.proposals[idx]
@@ -254,6 +261,7 @@ class CustomDataset(Dataset):
         Returns:
             tuple[str] or list[str]: Names of categories of the dataset.
         """
+
         if classes is None:
             return cls.CLASSES
 
@@ -266,6 +274,20 @@ class CustomDataset(Dataset):
             raise ValueError(f'Unsupported type {type(classes)} of classes.')
 
         return class_names
+    
+    @classmethod
+    def get_attributes(atr, attributes=None):
+        if attributes is None:
+            return atr.ATTRIBUTES
+        if isinstance(attributes, str):
+            attribute_names = mmcv.list_from_file(attributes)
+        elif isinstance(attributes, (tuple, list)):
+            attribute_names = attributes
+        else:
+            raise ValueError(f'Unsupport type {type(attirubtes)} of attributes.')
+            
+        return attribute_names    
+        
 
     def format_results(self, results, **kwargs):
         """Place holder to format result to dataset specific output."""

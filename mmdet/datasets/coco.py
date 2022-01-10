@@ -18,6 +18,10 @@ from .api_wrappers import COCO, COCOeval
 from .builder import DATASETS
 from .custom import CustomDataset
 
+import os.path as osp
+import time
+from mmdet.utils import collect_env, get_root_logger
+
 
 @DATASETS.register_module()
 class CocoDataset(CustomDataset):
@@ -89,9 +93,18 @@ class CocoDataset(CustomDataset):
         self.coco = COCO(ann_file)
         # The order of returned `cat_ids` will not
         # change with the order of the CLASSES
+        
+        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        log_file = osp.join('/home/noothxee/th_dev/mmdetection-fashionpedia/work_dirs/mask_rcnn_r50_fpn_1x_coco', f'{timestamp}.log')
+        logger = get_root_logger(log_file=log_file, log_level='INFO')        
+        
         self.cat_ids = self.coco.get_cat_ids(cat_names=self.CLASSES)
-
+        self.atr_ids = self.coco.get_atr_ids(atr_names=self.ATTRIBUTES)
+        
+        
         self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
+        self.atr2label = {atr_id: i for i, atr_id in enumerate(self.atr_ids)}
+
         self.img_ids = self.coco.get_img_ids()
         data_infos = []
         total_ann_ids = []
@@ -135,7 +148,7 @@ class CocoDataset(CustomDataset):
         ann_info = self.coco.load_anns(ann_ids)
         return [ann['category_id'] for ann in ann_info]
     
-    def get_att_ids(self, idx):
+    def get_atr_ids(self, idx):
         """Get COCO category ids by index.
 
         Args:
@@ -144,7 +157,7 @@ class CocoDataset(CustomDataset):
         Returns:
             list[int]: All categories in the image of specified index.
         """
-
+    
         img_id = self.data_infos[idx]['id']
         ann_ids = self.coco.get_ann_ids(img_ids=[img_id])
         ann_info = self.coco.load_anns(ann_ids)
@@ -188,6 +201,7 @@ class CocoDataset(CustomDataset):
         """
         gt_bboxes = []
         gt_labels = []
+        gt_attributes = []
         gt_bboxes_ignore = []
         gt_masks_ann = []
         for i, ann in enumerate(ann_info):
@@ -208,15 +222,19 @@ class CocoDataset(CustomDataset):
             else:
                 gt_bboxes.append(bbox)
                 gt_labels.append(self.cat2label[ann['category_id']])
+                for i in ann['attribute_ids']:
+                    gt_attributes.append(self.atr2label[i])
                 gt_masks_ann.append(ann.get('segmentation', None))
 
         if gt_bboxes:
             gt_bboxes = np.array(gt_bboxes, dtype=np.float32)
             gt_labels = np.array(gt_labels, dtype=np.int64)
+            gt_attributes = np.array(gt_attributes, dtype=np.int64)
         else:
             gt_bboxes = np.zeros((0, 4), dtype=np.float32)
             gt_labels = np.array([], dtype=np.int64)
-
+            gt_attributes = np.array([], dtype=np.int64)
+            
         if gt_bboxes_ignore:
             gt_bboxes_ignore = np.array(gt_bboxes_ignore, dtype=np.float32)
         else:
@@ -227,6 +245,7 @@ class CocoDataset(CustomDataset):
         ann = dict(
             bboxes=gt_bboxes,
             labels=gt_labels,
+            attributes=gt_attributes,
             bboxes_ignore=gt_bboxes_ignore,
             masks=gt_masks_ann,
             seg_map=seg_map)

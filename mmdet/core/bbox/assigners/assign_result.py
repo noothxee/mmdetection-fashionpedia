@@ -194,10 +194,10 @@ class AssignResult(util_mixins.NiceRepr):
         Args:
             gt_labels (torch.Tensor): Labels of gt boxes
         """
+        
         self_inds = torch.arange(
             1, len(gt_labels) + 1, dtype=torch.long, device=gt_labels.device)
         self.gt_inds = torch.cat([self_inds, self.gt_inds])
-
         self.max_overlaps = torch.cat(
             [self.max_overlaps.new_ones(len(gt_labels)), self.max_overlaps])
 

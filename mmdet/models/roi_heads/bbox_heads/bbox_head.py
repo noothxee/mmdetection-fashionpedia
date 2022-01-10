@@ -24,7 +24,7 @@ class BBoxHead(BaseModule):
                  roi_feat_size=7,
                  in_channels=256,
                  num_classes=46,
-                 num_attributes=46,
+                 num_attributes=294,
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
                      clip_border=True,
@@ -287,7 +287,8 @@ class BBoxHead(BaseModule):
              label_weights,
              bbox_targets,
              bbox_weights,
-             reduction_override=None):
+             reduction_override=None):     
+        
         losses = dict()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
@@ -306,7 +307,7 @@ class BBoxHead(BaseModule):
                     acc_ = self.loss_cls.get_accuracy(cls_score, labels)
                     losses.update(acc_)
                 else:
-                    losses['acc'] = accuracy(cls_score, labels)
+                    losses['acc'] = accuracy(cls_score, labels)                    
         if bbox_pred is not None:
             bg_class_ind = self.num_classes
             # 0~self.num_classes-1 are FG, self.num_classes is BG

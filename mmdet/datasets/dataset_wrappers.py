@@ -77,7 +77,6 @@ class ConcatDataset(_ConcatDataset):
         Returns:
             dict: Annotation info of specified index.
         """
-
         if idx < 0:
             if -idx > len(self):
                 raise ValueError(

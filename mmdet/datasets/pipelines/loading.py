@@ -13,7 +13,11 @@ try:
 except ImportError:
     rgb2id = None
 
-
+import os.path as osp
+import time
+from mmdet.utils import collect_env, get_root_logger
+    
+    
 @PIPELINES.register_module()
 class LoadImageFromFile:
     """Load an image from file.
@@ -207,6 +211,7 @@ class LoadAnnotations:
              Default: True.
         with_label (bool): Whether to parse and load the label annotation.
             Default: True.
+        with_attributes: (bool): Whether to parse and load the attribute annotation
         with_mask (bool): Whether to parse and load the mask annotation.
              Default: False.
         with_seg (bool): Whether to parse and load the semantic segmentation
@@ -221,12 +226,14 @@ class LoadAnnotations:
     def __init__(self,
                  with_bbox=True,
                  with_label=True,
+                 with_attribute=True,
                  with_mask=False,
                  with_seg=False,
                  poly2mask=True,
                  file_client_args=dict(backend='disk')):
         self.with_bbox = with_bbox
         self.with_label = with_label
+        self.with_attribute = with_attribute
         self.with_mask = with_mask
         self.with_seg = with_seg
         self.poly2mask = poly2mask
@@ -262,10 +269,16 @@ class LoadAnnotations:
         Returns:
             dict: The dict contains loaded label annotations.
         """
-
         results['gt_labels'] = results['ann_info']['labels'].copy()
+        
         return results
-
+    
+    def _load_attributes(self, results):
+        
+        results['gt_attributes'] = results['ann_info']['attributes'].copy()        
+        
+        return results
+        
     def _poly2mask(self, mask_ann, img_h, img_w):
         """Private function to convert masks represented with polygon to
         bitmaps.
@@ -373,6 +386,8 @@ class LoadAnnotations:
                 return None
         if self.with_label:
             results = self._load_labels(results)
+        if self.with_attribute:
+            results = self._load_attributes(results)
         if self.with_mask:
             results = self._load_masks(results)
         if self.with_seg:

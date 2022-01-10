@@ -67,6 +67,7 @@ class BaseSampler(metaclass=ABCMeta):
         """
         if len(bboxes.shape) < 2:
             bboxes = bboxes[None, :]
+        
 
         bboxes = bboxes[:, :4]
 
