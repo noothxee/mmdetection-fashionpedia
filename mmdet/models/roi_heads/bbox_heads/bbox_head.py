@@ -19,12 +19,10 @@ class BBoxHead(BaseModule):
     def __init__(self,
                  with_avg_pool=False,
                  with_cls=True,
-                 with_atr=True,
                  with_reg=True,
                  roi_feat_size=7,
                  in_channels=256,
                  num_classes=46,
-                 num_attributes=294,
                  bbox_coder=dict(
                      type='DeltaXYWHBBoxCoder',
                      clip_border=True,
@@ -34,13 +32,10 @@ class BBoxHead(BaseModule):
                  reg_decoded_bbox=False,
                  reg_predictor_cfg=dict(type='Linear'),
                  cls_predictor_cfg=dict(type='Linear'),
-                 atr_predictor_cfg=dict(type='Linear'),
                  loss_cls=dict(
                      type='CrossEntropyLoss',
                      use_sigmoid=False,
                      loss_weight=1.0),
-                loss_atr=dict(
-                    type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),             
                  loss_bbox=dict(
                      type='SmoothL1Loss', beta=1.0, loss_weight=1.0),
                  init_cfg=None):
@@ -48,23 +43,19 @@ class BBoxHead(BaseModule):
         assert with_cls or with_reg
         self.with_avg_pool = with_avg_pool
         self.with_cls = with_cls
-        self.with_atr = with_atr
         self.with_reg = with_reg
         self.roi_feat_size = _pair(roi_feat_size)
         self.roi_feat_area = self.roi_feat_size[0] * self.roi_feat_size[1]
         self.in_channels = in_channels
         self.num_classes = num_classes
-        self.num_attributes = num_attributes
         self.reg_class_agnostic = reg_class_agnostic
         self.reg_decoded_bbox = reg_decoded_bbox
         self.reg_predictor_cfg = reg_predictor_cfg
         self.cls_predictor_cfg = cls_predictor_cfg
-        self.atr_predictor_cfg = atr_predictor_cfg
         self.fp16_enabled = False
 
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.loss_cls = build_loss(loss_cls)
-        self.loss_atr = build_loss(loss_atr)
         self.loss_bbox = build_loss(loss_bbox)
 
         in_channels = self.in_channels
@@ -82,12 +73,6 @@ class BBoxHead(BaseModule):
                 self.cls_predictor_cfg,
                 in_features=in_channels,
                 out_features=cls_channels)
-        if self.with_atr:
-            atr_channels = num_attributes
-            self.fc_atr = build_linear_layer(
-                self.atr_predictor_cfg,
-                in_features=in_channels,
-                out_features=atr_channels)
         if self.with_reg:
             out_dim_reg = 4 if reg_class_agnostic else 4 * num_classes
             self.fc_reg = build_linear_layer(
@@ -102,11 +87,6 @@ class BBoxHead(BaseModule):
                     dict(
                         type='Normal', std=0.01, override=dict(name='fc_cls'))
                 ]
-            if self.with_atr:
-                self.init_cfg += [
-                    dict(
-                        type='Normal', std=0.01, override=dict(name='fc_atr'))
-                ]
 
             if self.with_reg:
                 self.init_cfg += [
@@ -117,10 +97,6 @@ class BBoxHead(BaseModule):
     @property
     def custom_cls_channels(self):
         return getattr(self.loss_cls, 'custom_cls_channels', False)
-    
-    @property
-    def custom_atr_channels(self):
-        return getattr(self.loss_atr, 'custom_atr_channels', False)
 
     @property
     def custom_activation(self):
@@ -146,38 +122,7 @@ class BBoxHead(BaseModule):
 
     def _get_target_single(self, pos_bboxes, neg_bboxes, pos_gt_bboxes,
                            pos_gt_labels, cfg):
-        """Calculate the ground truth for proposals in the single image
-        according to the sampling results.
 
-        Args:
-            pos_bboxes (Tensor): Contains all the positive boxes,
-                has shape (num_pos, 4), the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            neg_bboxes (Tensor): Contains all the negative boxes,
-                has shape (num_neg, 4), the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            pos_gt_bboxes (Tensor): Contains gt_boxes for
-                all positive samples, has shape (num_pos, 4),
-                the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            pos_gt_labels (Tensor): Contains gt_labels for
-                all positive samples, has shape (num_pos, ).
-            cfg (obj:`ConfigDict`): `train_cfg` of R-CNN.
-
-        Returns:
-            Tuple[Tensor]: Ground truth for proposals
-            in a single image. Containing the following Tensors:
-
-                - labels(Tensor): Gt_labels for all proposals, has
-                  shape (num_proposals,).
-                - label_weights(Tensor): Labels_weights for all
-                  proposals, has shape (num_proposals,).
-                - bbox_targets(Tensor):Regression target for all
-                  proposals, has shape (num_proposals, 4), the
-                  last dimension 4 represents [tl_x, tl_y, br_x, br_y].
-                - bbox_weights(Tensor):Regression weights for all
-                  proposals, has shape (num_proposals, 4).
-        """
         num_pos = pos_bboxes.size(0)
         num_neg = neg_bboxes.size(0)
         num_samples = num_pos + num_neg
@@ -217,48 +162,7 @@ class BBoxHead(BaseModule):
                     gt_labels,
                     rcnn_train_cfg,
                     concat=True):
-        """Calculate the ground truth for all samples in a batch according to
-        the sampling_results.
 
-        Almost the same as the implementation in bbox_head, we passed
-        additional parameters pos_inds_list and neg_inds_list to
-        `_get_target_single` function.
-
-        Args:
-            sampling_results (List[obj:SamplingResults]): Assign results of
-                all images in a batch after sampling.
-            gt_bboxes (list[Tensor]): Gt_bboxes of all images in a batch,
-                each tensor has shape (num_gt, 4),  the last dimension 4
-                represents [tl_x, tl_y, br_x, br_y].
-            gt_labels (list[Tensor]): Gt_labels of all images in a batch,
-                each tensor has shape (num_gt,).
-            rcnn_train_cfg (obj:ConfigDict): `train_cfg` of RCNN.
-            concat (bool): Whether to concatenate the results of all
-                the images in a single batch.
-
-        Returns:
-            Tuple[Tensor]: Ground truth for proposals in a single image.
-            Containing the following list of Tensors:
-
-                - labels (list[Tensor],Tensor): Gt_labels for all
-                  proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - label_weights (list[Tensor]): Labels_weights for
-                  all proposals in a batch, each tensor in list has
-                  shape (num_proposals,) when `concat=False`, otherwise
-                  just a single tensor has shape (num_all_proposals,).
-                - bbox_targets (list[Tensor],Tensor): Regression target
-                  for all proposals in a batch, each tensor in list
-                  has shape (num_proposals, 4) when `concat=False`,
-                  otherwise just a single tensor has shape
-                  (num_all_proposals, 4), the last dimension 4 represents
-                  [tl_x, tl_y, br_x, br_y].
-                - bbox_weights (list[tensor],Tensor): Regression weights for
-                  all proposals in a batch, each tensor in list has shape
-                  (num_proposals, 4) when `concat=False`, otherwise just a
-                  single tensor has shape (num_all_proposals, 4).
-        """
         pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
         neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
         pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
@@ -287,8 +191,8 @@ class BBoxHead(BaseModule):
              label_weights,
              bbox_targets,
              bbox_weights,
-             reduction_override=None):     
-        
+             reduction_override=None):
+
         losses = dict()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)
@@ -307,7 +211,7 @@ class BBoxHead(BaseModule):
                     acc_ = self.loss_cls.get_accuracy(cls_score, labels)
                     losses.update(acc_)
                 else:
-                    losses['acc'] = accuracy(cls_score, labels)                    
+                    losses['acc'] = accuracy(cls_score, labels)
         if bbox_pred is not None:
             bg_class_ind = self.num_classes
             # 0~self.num_classes-1 are FG, self.num_classes is BG

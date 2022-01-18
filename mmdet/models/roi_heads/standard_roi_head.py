@@ -6,10 +6,6 @@ from ..builder import HEADS, build_head, build_roi_extractor
 from .base_roi_head import BaseRoIHead
 from .test_mixins import BBoxTestMixin, MaskTestMixin
 
-import os.path as osp
-import time
-from mmdet.utils import collect_env, get_root_logger
-
 
 @HEADS.register_module()
 class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
@@ -28,6 +24,10 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         """Initialize ``bbox_head``"""
         self.bbox_roi_extractor = build_roi_extractor(bbox_roi_extractor)
         self.bbox_head = build_head(bbox_head)
+
+    def init_atr_head(self, bbox_roi_extractor, atr_head):
+        self.atr_roi_extractor = build_roi_extractor(bbox_roi_extractor)
+        self.atr_head = build_head(atr_head)
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
         """Initialize ``mask_head``"""
@@ -85,12 +85,9 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         Returns:
             dict[str, Tensor]: a dictionary of loss components
         """
-        timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-        log_file = osp.join('/home/noothxee/th_dev/mmdetection-fashionpedia/work_dirs/mask_rcnn_r50_fpn_1x_coco', f'{timestamp}.log')
-        logger = get_root_logger(log_file=log_file, log_level='INFO')  
-       
+
         # assign gts and sample proposals
-        if self.with_bbox or self.with_mask:
+        if self.with_bbox or self.with_mask or self.with_atr:
             num_imgs = len(img_metas)
             if gt_bboxes_ignore is None:
                 gt_bboxes_ignore = [None for _ in range(num_imgs)]
@@ -115,6 +112,11 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
                                                     img_metas)
             losses.update(bbox_results['loss_bbox'])
 
+        if self.with_atr:
+            atr_results = self._atr_forward_train(
+                x, sampling_results, gt_attributes, img_metas)
+            losses.update(atr_results['loss_atr'])
+
         # mask head forward and loss
         if self.with_mask:
             mask_results = self._mask_forward_train(x, sampling_results,
@@ -131,15 +133,15 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             x[:self.bbox_roi_extractor.num_inputs], rois)
         if self.with_shared_head:
             bbox_feats = self.shared_head(bbox_feats)
-        cls_score, atr_score, bbox_pred = self.bbox_head(bbox_feats)
+        cls_score, bbox_pred = self.bbox_head(bbox_feats)
 
         bbox_results = dict(
-            cls_score=cls_score, atr_score=atr_score, bbox_pred=bbox_pred, bbox_feats=bbox_feats)
+            cls_score=cls_score,  bbox_pred=bbox_pred, bbox_feats=bbox_feats)
         return bbox_results
 
     def _bbox_forward_train(self, x, sampling_results, gt_bboxes, gt_labels,
                             img_metas):
-        """Run forward function and calculate loss for box head in training."""        
+        """Run forward function and calculate loss for box head in training."""
         rois = bbox2roi([res.bboxes for res in sampling_results])
         bbox_results = self._bbox_forward(x, rois)
         bbox_targets = self.bbox_head.get_targets(sampling_results, gt_bboxes,
@@ -150,6 +152,36 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
         bbox_results.update(loss_bbox=loss_bbox)
         return bbox_results
+
+    def _atr_forward(self, x, rois):
+
+        atr_feats = self.bbox_roi_extractor(
+            x[:self.bbox_roi_extractor.num_inputs], rois
+        )
+
+        if self.with_shared_head:
+            atr_feats = self.shared_head(atr_feats)
+        atr_score = self.bbox_head(atr_feats)
+
+        atr_results = dict(
+            atr_score=atr_score
+        )
+
+        return atr_results
+
+    def _atr_forward_train(self, x, sampling_results, gt_attributes, img_metas):
+
+        rois = bbox2roi([res.bboxes for res in sampling_results])
+
+        atr_results = self._atr_forward(x, rois)
+
+        # atr_targets = self.atr_head.get_targets(
+        #     sampling_results, gt_attributes, self.train_cfg)
+
+        loss_atr = self.atr_head.loss(atr_results['atr_score'], gt_attributes)
+        atr_results.update(loss_atr=loss_atr)
+
+        return atr_results
 
     def _mask_forward_train(self, x, sampling_results, bbox_feats, gt_masks,
                             img_metas):
@@ -365,7 +397,6 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             proposals (Tensor): Region proposals with
                 batch dimension, has shape [N, num_bboxes, 5].
             rcnn_test_cfg (obj:`ConfigDict`): `test_cfg` of R-CNN.
-
         Returns:
             tuple[Tensor, Tensor]: bboxes of shape [N, num_bboxes, 5]
                 and class labels of shape [N, num_bboxes].
