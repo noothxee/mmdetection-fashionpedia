@@ -40,7 +40,7 @@ model = dict(
             out_channels=256,
             featmap_strides=[4, 8, 16, 32]),
         bbox_head=dict(
-            type='Shared4Conv1FcBBoxHead',
+            type='Shared4Conv1FCBBoxHead',
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
@@ -65,7 +65,7 @@ model = dict(
             roi_feat_size=7,
             num_attributes=294,
             loss_atr=dict(
-                type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
+                type='CrossEntropyLoss', use_sigmoid=True, loss_weight=1.0)),
         mask_roi_extractor=dict(
             type='SingleRoIExtractor',
             roi_layer=dict(type='RoIAlign', output_size=14, sampling_ratio=0),

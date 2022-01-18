@@ -162,7 +162,6 @@ class BBoxHead(BaseModule):
                     gt_labels,
                     rcnn_train_cfg,
                     concat=True):
-
         pos_bboxes_list = [res.pos_bboxes for res in sampling_results]
         neg_bboxes_list = [res.neg_bboxes for res in sampling_results]
         pos_gt_bboxes_list = [res.pos_gt_bboxes for res in sampling_results]
@@ -192,7 +191,6 @@ class BBoxHead(BaseModule):
              bbox_targets,
              bbox_weights,
              reduction_override=None):
-
         losses = dict()
         if cls_score is not None:
             avg_factor = max(torch.sum(label_weights > 0).float().item(), 1.)

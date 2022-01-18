@@ -39,7 +39,7 @@ class ConvFCAtrHead(AttributeHead):
         # add atr specific branch
         self.atr_convs, self.atr_fcs, self.atr_last_dim = \
             self._add_conv_fc_branch(
-                self.num_cls_convs, self.num_cls_fcs, self.shared_out_channels)
+                self.num_atr_convs, self.num_atr_fcs, self.in_channels)
 
         if not self.with_avg_pool:
             if self.num_atr_fcs == 0:
@@ -52,7 +52,7 @@ class ConvFCAtrHead(AttributeHead):
                 atr_channels = self.loss_atr.get_atr_channels(
                     self.num_attributes)
             else:
-                atr_channels = self.num_attributes
+                atr_channels = self.num_attributes + 1
             self.fc_atr = build_linear_layer(
                 self.atr_predictor_cfg,
                 in_features=self.atr_last_dim,
@@ -98,8 +98,7 @@ class ConvFCAtrHead(AttributeHead):
         if num_branch_fcs > 0:
             # for shared branch, only consider self.with_avg_pool
             # for separated branches, also consider self.num_shared_fcs
-            if (is_shared
-                    or self.num_shared_fcs == 0) and not self.with_avg_pool:
+            if not self.with_avg_pool:
                 last_layer_dim *= self.roi_feat_area
             for i in range(num_branch_fcs):
                 fc_in_channels = (
@@ -111,18 +110,6 @@ class ConvFCAtrHead(AttributeHead):
 
     def forward(self, x):
         # shared part
-        if self.num_shared_convs > 0:
-            for conv in self.shared_convs:
-                x = conv(x)
-
-        if self.num_shared_fcs > 0:
-            if self.with_avg_pool:
-                x = self.avg_pool(x)
-
-            x = x.flatten(1)
-
-            for fc in self.shared_fcs:
-                x = self.relu(fc(x))
         # separate branches
         x_atr = x
 

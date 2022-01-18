@@ -12,6 +12,8 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
     def __init__(self,
                  bbox_roi_extractor=None,
                  bbox_head=None,
+                 atr_roi_extractor=None,
+                 atr_head=None,
                  mask_roi_extractor=None,
                  mask_head=None,
                  shared_head=None,
@@ -28,6 +30,10 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
 
         if bbox_head is not None:
             self.init_bbox_head(bbox_roi_extractor, bbox_head)
+        
+        if atr_head is not None:
+            self.init_atr_head(atr_roi_extractor, atr_head)
+           
 
         if mask_head is not None:
             self.init_mask_head(mask_roi_extractor, mask_head)
@@ -38,7 +44,11 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
     def with_bbox(self):
         """bool: whether the RoI head contains a `bbox_head`"""
         return hasattr(self, 'bbox_head') and self.bbox_head is not None
-
+    
+    @property
+    def with_atr(self):
+        return hasattr(self, 'atr_head') and self.atr_head is not None
+    
     @property
     def with_mask(self):
         """bool: whether the RoI head contains a `mask_head`"""
@@ -53,7 +63,11 @@ class BaseRoIHead(BaseModule, metaclass=ABCMeta):
     def init_bbox_head(self):
         """Initialize ``bbox_head``"""
         pass
-
+    
+    @abstractmethod
+    def init_atr_head(self):
+        pass
+    
     @abstractmethod
     def init_mask_head(self):
         """Initialize ``mask_head``"""

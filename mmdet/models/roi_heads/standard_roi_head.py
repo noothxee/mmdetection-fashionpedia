@@ -25,8 +25,8 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         self.bbox_roi_extractor = build_roi_extractor(bbox_roi_extractor)
         self.bbox_head = build_head(bbox_head)
 
-    def init_atr_head(self, bbox_roi_extractor, atr_head):
-        self.atr_roi_extractor = build_roi_extractor(bbox_roi_extractor)
+    def init_atr_head(self, atr_roi_extractor, atr_head):
+        self.atr_roi_extractor = build_roi_extractor(atr_roi_extractor)
         self.atr_head = build_head(atr_head)
 
     def init_mask_head(self, mask_roi_extractor, mask_head):
@@ -95,12 +95,13 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
             for i in range(num_imgs):
                 assign_result = self.bbox_assigner.assign(
                     proposal_list[i], gt_bboxes[i], gt_bboxes_ignore[i],
-                    gt_labels[i])
+                    gt_labels[i], gt_attributes[i])
                 sampling_result = self.bbox_sampler.sample(
                     assign_result,
                     proposal_list[i],
                     gt_bboxes[i],
                     gt_labels[i],
+                    gt_attributes[i],
                     feats=[lvl_feat[i][None] for lvl_feat in x])
                 sampling_results.append(sampling_result)
 
@@ -155,13 +156,11 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
 
     def _atr_forward(self, x, rois):
 
-        atr_feats = self.bbox_roi_extractor(
-            x[:self.bbox_roi_extractor.num_inputs], rois
+        atr_feats = self.atr_roi_extractor(
+            x[:self.atr_roi_extractor.num_inputs], rois
         )
 
-        if self.with_shared_head:
-            atr_feats = self.shared_head(atr_feats)
-        atr_score = self.bbox_head(atr_feats)
+        atr_score = self.atr_head(atr_feats)
 
         atr_results = dict(
             atr_score=atr_score
@@ -174,11 +173,11 @@ class StandardRoIHead(BaseRoIHead, BBoxTestMixin, MaskTestMixin):
         rois = bbox2roi([res.bboxes for res in sampling_results])
 
         atr_results = self._atr_forward(x, rois)
-
-        # atr_targets = self.atr_head.get_targets(
-        #     sampling_results, gt_attributes, self.train_cfg)
-
-        loss_atr = self.atr_head.loss(atr_results['atr_score'], gt_attributes)
+        
+        atr_targets = self.atr_head.get_targets(
+            sampling_results, gt_attributes, self.train_cfg)
+        
+        loss_atr = self.atr_head.loss(atr_results['atr_score'], *atr_targets)
         atr_results.update(loss_atr=loss_atr)
 
         return atr_results

@@ -43,11 +43,19 @@ class SamplingResult(util_mixins.NiceRepr):
                 gt_bboxes = gt_bboxes.view(-1, 4)
 
             self.pos_gt_bboxes = gt_bboxes[self.pos_assigned_gt_inds, :]
-
+                    
+        
         if assign_result.labels is not None:
             self.pos_gt_labels = assign_result.labels[pos_inds]
         else:
             self.pos_gt_labels = None
+        
+        if assign_result.attributes is not None:
+            value = -1 
+            assign_result.attributes = assign_result.attributes[assign_result.attributes!=value]
+            self.pos_gt_attributes = assign_result.attributes
+        else:
+            self.pos_gt_attributes = None
 
     @property
     def bboxes(self):
