@@ -201,7 +201,8 @@ class MaxIoUAssigner(BaseAssigner):
                         assigned_gt_inds[max_iou_inds] = i + 1
                     else:
                         assigned_gt_inds[gt_argmax_overlaps[i]] = i + 1
-
+        
+        
         if gt_labels is not None:
             
             assigned_labels = assigned_gt_inds.new_full((num_bboxes, ), -1)
@@ -219,12 +220,6 @@ class MaxIoUAssigner(BaseAssigner):
         if  gt_attributes is not None:            
             assigned_attributes = assigned_gt_inds.new_full((num_bboxes, ), -1)            
             
-            pos_inds_atr = torch.nonzero(
-                assigned_gt_inds > 0, as_tuple=False).squeeze()            
-            
-            if pos_inds_atr.numel() > 0:
-                assigned_attributes[pos_inds_atr] = gt_attributes[
-                    assigned_gt_inds[pos_inds_atr] - 1]                
         else:
             assigned_attributes = None
             
